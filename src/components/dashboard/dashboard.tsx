@@ -14,7 +14,9 @@ import { DateRangeFilter, type DateSelection } from "./date-range-filter";
 import { UsageCharts } from "./usage-charts";
 import { ModelsTable } from "./models-table";
 import { defaultDateSelection } from "@/lib/utils/dates";
-import type { SessionDTO, UsageDTO } from "@/types/dashboard";
+import type {
+  SessionDTO, UsageDTO, ModelDTO, RequestVolumeDTO,
+} from "@/types/dashboard";
 type Overview = {
   session: SessionDTO;
   usage: UsageDTO | null;
@@ -32,6 +34,12 @@ export function Dashboard({
   );
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [models, setModels] = useState<ModelDTO[] | null>(null);
+  const [charts, setCharts] = useState<RequestVolumeDTO | null>(null);
+  const [modelsError, setModelsError] = useState("");
+  const [chartsError, setChartsError] = useState("");
+  const [modelsLoading, setModelsLoading] = useState(true);
+  const [chartsLoading, setChartsLoading] = useState(true);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [budgetId, setBudgetId] = useState("");
@@ -42,6 +50,12 @@ export function Dashboard({
     async function load() {
       setLoading(true);
       setError("");
+      setModels(null);
+      setCharts(null);
+      setModelsError("");
+      setChartsError("");
+      setModelsLoading(true);
+      setChartsLoading(true);
       try {
         const r = await fetch(`/api/dashboard/overview?${query}`, {
           cache: "no-store",
@@ -53,7 +67,54 @@ export function Dashboard({
           throw new Error(
             value.error?.message ?? "Unable to load your report.",
           );
-        if (!controller.signal.aborted) setData(value);
+        if (controller.signal.aborted) return;
+        setData(value);
+        setLoading(false);
+        // Summary is visible first; neither detail request blocks the other.
+        async function details<T>(
+          section: string,
+          receive: (result: T) => void,
+          fail: (message: string) => void,
+          finish: () => void,
+        ) {
+          try {
+            const response = await fetch(`/api/dashboard/${section}?${query}`, {
+              cache: "no-store",
+              credentials: "same-origin",
+              signal: controller.signal,
+            });
+            const result = await response.json();
+            if (!response.ok)
+              throw new Error(result.error?.message ?? "Unable to load this section.");
+            if (!controller.signal.aborted) receive(result);
+          } catch (error) {
+            if (!controller.signal.aborted)
+              fail(error instanceof Error ? error.message : "Unable to load this section.");
+          } finally {
+            if (!controller.signal.aborted) finish();
+          }
+        }
+        void details<{ models: ModelDTO[]; p95LatencyMs?: number | null }>(
+          "models",
+          (result) => {
+            setModels(result.models);
+            setData((current) => current?.usage ? {
+              ...current,
+              usage: {
+                ...current.usage,
+                health: {
+                  ...current.usage.health,
+                  p95LatencyMs: result.p95LatencyMs ?? null,
+                },
+              },
+            } : current);
+          },
+          setModelsError,
+          () => setModelsLoading(false),
+        );
+        void details<RequestVolumeDTO>(
+          "charts", setCharts, setChartsError, () => setChartsLoading(false),
+        );
       } catch (e) {
         if (!controller.signal.aborted) {
           const message =
@@ -224,7 +285,6 @@ export function Dashboard({
                         </AlertDescription>
                       </Alert>
                     )}
-                    <ModelsTable models={data.usage.models} />
                     {data.usage.empty ? (
                       <Alert>
                         <AlertTitle>No usage yet</AlertTitle>
@@ -234,11 +294,32 @@ export function Dashboard({
                         </AlertDescription>
                       </Alert>
                     ) : (
-                      <UsageCharts usage={data.usage} />
+                      <>
+                        {chartsLoading ? (
+                          <div role="status" aria-label="Loading request volume">
+                            <Skeleton className="h-80" />
+                          </div>
+                        ) : chartsError ? (
+                          <Alert>
+                            <AlertTitle>Request volume unavailable</AlertTitle>
+                            <AlertDescription>{chartsError}</AlertDescription>
+                          </Alert>
+                        ) : charts ? <UsageCharts usage={charts} /> : null}
+                      </>
                     )}
                   </>
                 )
               )}
+              {modelsLoading ? (
+                <div role="status" aria-label="Loading model usage">
+                  <Skeleton className="h-80" />
+                </div>
+              ) : modelsError ? (
+                <Alert>
+                  <AlertTitle>Model usage unavailable</AlertTitle>
+                  <AlertDescription>{modelsError}</AlertDescription>
+                </Alert>
+              ) : models ? <ModelsTable models={models} /> : null}
             </>
           )
         )}

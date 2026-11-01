@@ -30,7 +30,7 @@ export async function bifrostGet(
   const env = getEnv();
   if (
     !/^\/api\/governance\/virtual-keys\/[A-Za-z0-9_-]+$/.test(path) &&
-    !["/api/logs", "/api/logs/stats"].includes(path)
+    !["/api/logs", "/api/logs/stats", "/api/logs/histogram"].includes(path)
   )
     throw new AppError("FORBIDDEN", 403);
   const url = new URL(path, env.BIFROST_BASE_URL);

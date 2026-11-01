@@ -2,7 +2,7 @@ import "server-only";
 import Decimal from "decimal.js";
 import type { Metrics, ModelDTO, Range, UsageDTO } from "@/types/dashboard";
 import { bucketDate, localBucketDate } from "@/lib/utils/dates";
-import { readScopedLogs } from "./logs";
+import { readScopedLogs, readScopedStats } from "./logs";
 import { type SafeLog, statsSchema } from "./schemas";
 import type { z } from "zod";
 import { addDays, format, parseISO } from "date-fns";
@@ -118,5 +118,37 @@ export async function getReport(id: string, range: Range): Promise<UsageDTO> {
     series,
     empty: rows.length === 0,
     incompleteMetrics: totals.cost === null || totals.totalTokens === null,
+  };
+}
+
+// Gateway aggregates do not depend on nullable per-request metadata or log pagination.
+export async function getSummary(id: string, range: Range): Promise<UsageDTO> {
+  let stats;
+  try {
+    stats = await readScopedStats(id, range);
+  } catch (error) {
+    if (error instanceof AppError && error.code === "KEY_NOT_FOUND")
+      throw new AppError("ANALYTICS_UNAVAILABLE", 503);
+    throw error;
+  }
+  return {
+    range,
+    totals: {
+      requests: stats.total_requests,
+      inputTokens: stats.prompt_tokens,
+      outputTokens: stats.completion_tokens,
+      totalTokens: stats.total_tokens,
+      cachedTokens: null,
+      cost: new Decimal(stats.total_cost).toString(),
+    },
+    health: {
+      successRate: stats.total_requests ? (stats.success_rate ?? null) : null,
+      userSuccessRate: stats.total_requests ? (stats.user_facing_success_rate ?? null) : null,
+      averageLatencyMs: stats.total_requests ? (stats.average_latency ?? null) : null,
+      p95LatencyMs: null,
+    },
+    models: [], providers: [], series: [],
+    empty: stats.total_requests === 0,
+    incompleteMetrics: false,
   };
 }

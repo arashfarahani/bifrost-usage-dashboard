@@ -1,5 +1,6 @@
 import { authenticated } from "@/lib/auth/session";
-import { getReport } from "@/lib/bifrost/analytics";
+import { getReport, getSummary } from "@/lib/bifrost/analytics";
+import { getRequestVolume } from "@/lib/bifrost/histogram";
 import { parseRange } from "@/lib/utils/dates";
 import { json, errorResponse } from "@/lib/http";
 import { AppError, safeError } from "@/lib/errors";
@@ -27,7 +28,7 @@ export async function GET(
       try {
         return json({
           session,
-          usage: await getReport(identity.virtualKeyId, range),
+          usage: await getSummary(identity.virtualKeyId, range),
           analyticsError: null,
         });
       } catch (e) {
@@ -39,18 +40,10 @@ export async function GET(
         });
       }
     }
+    if (section === "charts") return json(await getRequestVolume(identity.virtualKeyId, range));
+    if (section === "usage") return json(await getSummary(identity.virtualKeyId, range));
     const report = await getReport(identity.virtualKeyId, range);
-    return json(
-      section === "models"
-        ? { models: report.models }
-        : section === "charts"
-          ? {
-              series: report.series,
-              providers: report.providers,
-              models: report.models,
-            }
-          : report,
-    );
+    return json({ models: report.models, p95LatencyMs: report.health.p95LatencyMs });
   } catch (e) {
     return errorResponse(e);
   }

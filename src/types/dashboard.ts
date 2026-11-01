@@ -69,3 +69,14 @@ export type SessionDTO = {
   key: KeyDTO;
   timezone: string;
 };
+
+export type RequestVolumeDTO = {
+  range: Range;
+  series: {
+    date: string;
+    requests: number;
+    success: number;
+    error: number;
+    cancelled: number;
+  }[];
+};

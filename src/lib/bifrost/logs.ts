@@ -5,16 +5,24 @@ import { keyIdSchema } from "@/lib/auth/tokens";
 import { AppError } from "@/lib/errors";
 import type { z } from "zod";
 import type { Range } from "@/types/dashboard";
-export async function readScopedLogs(
-  id: string,
-  range: Range,
-): Promise<{ logs: SafeLog[]; stats: z.infer<typeof statsSchema> }> {
+export function scopedParams(id: string, range: Range): URLSearchParams {
   if (!keyIdSchema.safeParse(id).success) throw new AppError("INVALID_INPUT");
-  const base = new URLSearchParams({
+  return new URLSearchParams({
     virtual_key_ids: id,
     start_time: range.start,
     end_time: range.end,
   });
+}
+export async function readScopedStats(id: string, range: Range) {
+  const result = statsSchema.safeParse(await bifrostGet("/api/logs/stats", scopedParams(id, range)));
+  if (!result.success) throw new AppError("ANALYTICS_UNAVAILABLE", 503);
+  return result.data;
+}
+export async function readScopedLogs(
+  id: string,
+  range: Range,
+): Promise<{ logs: SafeLog[]; stats: z.infer<typeof statsSchema> }> {
+  const base = scopedParams(id, range);
   const deadline = AbortSignal.timeout(25000);
   const stats = statsSchema.safeParse(
     await bifrostGet("/api/logs/stats", base, deadline),
