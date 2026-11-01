@@ -1,0 +1,9 @@
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - lucide-react@1.66.0
+overrides:
+  minimatch: 11.0.3
+patchedDependencies:
+  minimatch@11.0.3: patches/minimatch@11.0.3.patch

@@ -1,0 +1,8 @@
+simulation: bifrost-contract
+routing: path
+mocks:
+  - name: Bifrost
+    routeKey: bifrost
+    origin:
+      - bifrost.internal.test
+    path: postman/mocks/bifrost

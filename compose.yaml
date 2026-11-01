@@ -1,0 +1,19 @@
+services:
+  usage:
+    image: ghcr.io/arashfarahani/bifrost-usage-dashboard:${IMAGE_TAG:-latest}
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:3000:3000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    # Attach this service to the gateway's existing private Docker network,
+    # or configure a private reachable BIFROST_BASE_URL. No gateway is created.

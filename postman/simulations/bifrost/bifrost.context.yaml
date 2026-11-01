@@ -1,0 +1,13 @@
+name: bifrost-contract
+description: Local test-only stand-in; never production data or a production fallback.
+source: https://github.com/maximhq/bifrost/tree/0a8a38c983b7b932a3f7b4e85adeac08ad99b497
+claims:
+  - claim: Management reads accept Basic Auth and direct virtual-key IDs.
+    status: source-verified
+    reason: Inspected OSS APIMiddleware and governance getVirtualKey.
+    verification: Real HTTP integration test passed against local Postman proxy on 2026-10-31; production container smoke also passed. Live gateway not configured.
+  - claim: Logs are scoped with virtual_key_ids and explicit RFC3339 bounds.
+    status: source-verified
+    reason: Inspected logging handler and RDB virtual_key_id IN filter.
+    verification: Two-key HTTP integration and EOF-probe regression passed on 2026-10-31. Scope appeared in simulation request logs. No live gateway evidence.
+owner_mock_search: Not performed; public upstream source is the contract authority, no workspace credentials required.
