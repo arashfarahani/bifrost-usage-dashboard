@@ -1,6 +1,6 @@
 # bifrost-usage-dashboard
 
-A lightweight, read-only, self-service dashboard for LLM Gateway usage. Built for Bifrost OSS, with encrypted personal access links, provider budget rules, ranked model usage, and a single Request Volume chart.
+A lightweight, read-only, self-service dashboard for LLM Gateway usage. Built for Bifrost OSS, with encrypted personal access links, personal and provider budget rules, ranked model usage, and a single Request Volume chart.
 
 No database, user directory, password login, stored virtual-key secrets, or Enterprise subscription is required. English interface, responsive layout, accessible shadcn/ui components, and light/dark themes.
 
@@ -131,7 +131,7 @@ docker run --rm --env-file .env --network YOUR_GATEWAY_NETWORK \
 
 ## Reporting behavior
 
-- Budgets come **only from `virtual_key.provider_configs`**, including nested model budget rules. Key-wide, team, and customer budgets are excluded. Independent rules are selectable and never summed.
+- Budgets use **`virtual_key.budgets`** first. If it is absent, null, or empty, they fall back to `virtual_key.provider_configs`, including nested model budget rules. Team and customer budgets are excluded. Independent rules are selectable and never summed.
 - Active override amounts increase the base limit. Expired cycle overrides are ignored. Remaining budget is clamped at zero; unknown or absent limits are never represented as a zero budget.
 - Budget cards represent the **current budget cycle**, independent of the selected history period.
 - The verified management response has no authoritative next-reset timestamp. The UI labels the first day of the next Gregorian month in `APP_TIMEZONE` as **Estimated**; the actual gateway reset may differ. This does not change gateway budgets.

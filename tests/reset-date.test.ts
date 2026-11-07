@@ -37,13 +37,19 @@ describe("monthly reset fallback", () => {
   );
 });
 
-it("ignores key-wide and shared budgets in favor of provider rules", () => {
-  const raw = {
+it("prefers direct key budgets over provider and shared budgets", () => {
+  const providerBudget = key.provider_configs![0].budgets![0];
+  const result = getBudgets({
     ...key,
-    budgets: [{ ...key.provider_configs![0].budgets![0], id: "ignored" }],
-    team: { name: "Shared", budgets: key.provider_configs![0].budgets },
-  };
-  const result = getBudgets(raw);
+    budgets: [{ ...providerBudget, id: "direct", max_limit: 100, current_usage: 25 }],
+    team: { name: "Shared", budgets: [providerBudget] },
+  });
   expect(result).toHaveLength(1);
-  expect(result[0].scope).toBe("openai");
+  expect(result[0]).toMatchObject({
+    scope: "Personal key", limit: "100", used: "25", remaining: "75",
+  });
+});
+
+it.each([[undefined], [null], [[]]] as const)("falls back to provider budgets when direct budgets are %j", (budgets) => {
+  expect(getBudgets({ ...key, budgets: budgets === undefined || budgets === null ? budgets : [...budgets] })[0].scope).toBe("openai");
 });

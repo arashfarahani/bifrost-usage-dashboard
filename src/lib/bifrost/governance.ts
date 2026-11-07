@@ -43,6 +43,10 @@ export function getBudgets(
       });
     }
   };
+  if (raw.budgets?.length) {
+    add(raw.budgets, "Personal key");
+    return result;
+  }
   for (const pc of raw.provider_configs ?? []) {
     add(pc.budgets, pc.provider);
     for (const m of pc.model_budgets ?? [])
