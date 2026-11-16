@@ -94,21 +94,9 @@ export function Dashboard({
             if (!controller.signal.aborted) finish();
           }
         }
-        void details<{ models: ModelDTO[]; p95LatencyMs?: number | null }>(
+        void details<{ models: ModelDTO[] }>(
           "models",
-          (result) => {
-            setModels(result.models);
-            setData((current) => current?.usage ? {
-              ...current,
-              usage: {
-                ...current.usage,
-                health: {
-                  ...current.usage.health,
-                  p95LatencyMs: result.p95LatencyMs ?? null,
-                },
-              },
-            } : current);
-          },
+          (result) => setModels(result.models),
           setModelsError,
           () => setModelsLoading(false),
         );

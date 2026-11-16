@@ -1,5 +1,6 @@
 import { authenticated } from "@/lib/auth/session";
-import { getReport, getSummary } from "@/lib/bifrost/analytics";
+import { getSummary } from "@/lib/bifrost/analytics";
+import { getModelRankings } from "@/lib/bifrost/rankings";
 import { getRequestVolume } from "@/lib/bifrost/histogram";
 import { parseRange } from "@/lib/utils/dates";
 import { json, errorResponse } from "@/lib/http";
@@ -42,8 +43,7 @@ export async function GET(
     }
     if (section === "charts") return json(await getRequestVolume(identity.virtualKeyId, range));
     if (section === "usage") return json(await getSummary(identity.virtualKeyId, range));
-    const report = await getReport(identity.virtualKeyId, range);
-    return json({ models: report.models, p95LatencyMs: report.health.p95LatencyMs });
+    return json({ models: await getModelRankings(identity.virtualKeyId, range) });
   } catch (e) {
     return errorResponse(e);
   }

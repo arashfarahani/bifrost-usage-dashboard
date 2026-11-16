@@ -44,8 +44,6 @@ export function ModelsTable({ models }: { models: ModelDTO[] }) {
     { key: "model", label: "Model" },
     { key: "provider", label: "Provider" },
     { key: "requests", label: "Requests" },
-    { key: "inputTokens", label: "Input tokens" },
-    { key: "outputTokens", label: "Output tokens" },
     { key: "totalTokens", label: "Total tokens" },
     { key: "cost", label: "Cost" },
     { key: "percentage", label: "Cost share" },

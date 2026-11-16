@@ -90,7 +90,7 @@ export function OverviewCards({
       icon: Timer,
       hint:
         usage?.health.p95LatencyMs == null
-          ? "p95 unavailable"
+          ? "Selected period"
           : `p95 ${(usage.health.p95LatencyMs / 1000).toFixed(1)}s`,
     },
   ];
